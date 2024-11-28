@@ -51,13 +51,22 @@ public class Customer {
     return "Customer{" + "customerID=" + customerID + ", name='" + name + '\'' + ", shoppingCart=" + shoppingCart + '}';
   }
 
-  // Methods to manage shopping cart
-  public void addProductToCart(Product product) {
-    shoppingCart.add(product);
+  // Add product to shopping cart if inventory allows
+  public boolean addProductToCart(Product product) {
+    if (product.decreaseInventory(1)) {
+      shoppingCart.add(product);
+      return true;
+    } else {
+      System.out.println("Product " + product.getName() + " is out of stock.");
+      return false;
+    }
   }
 
+  // Remove product from cart and restore inventory
   public void removeProductFromCart(Product product) {
-    shoppingCart.remove(product);
+    if (shoppingCart.remove(product)) {
+      product.setInventoryCount(product.getInventoryCount() + 1);
+    }
   }
 
   public double calculateTotalCost() {
@@ -65,14 +74,11 @@ public class Customer {
   }
 
   public void placeOrder() {
-    // Placeholder for placing an order logic
-    // for each product check that number exist in inventory,
-
-    // if so decrease its number in inventory and say order success
-    System.out.println("Order placed successfully.");
-
-    // for each product check that number exist in inventory, if so decrease its
-    // number in inventory and say order success
-    System.out.println("Order unsuccessful, number of Item X is more than what in inventory.");
+    if (!shoppingCart.isEmpty()) {
+      System.out.println("Order placed successfully.");
+      shoppingCart.clear();
+    } else {
+      System.out.println("Shopping cart is empty.");
+    }
   }
 }
