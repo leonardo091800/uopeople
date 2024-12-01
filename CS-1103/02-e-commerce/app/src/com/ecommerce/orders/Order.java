@@ -32,7 +32,7 @@ public class Order {
     System.out.println("Order ID: " + orderID);
     System.out.println("Customer: " + customer.getName());
     System.out.println("Products: ");
-    products.forEach(product -> System.out.println(product.getName() + " - $" + product.getPrice()));
+    products.forEach(product -> System.out.println(product));
     System.out.println("Order Total: $" + orderTotal);
   }
 

@@ -3,6 +3,7 @@ import com.ecommerce.Customer;
 import com.ecommerce.orders.Order;
 
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 
 public class Main {
@@ -40,7 +41,7 @@ public class Main {
 
     // 4. Customer places an order
     System.out.println("\nPlacing an order...");
-    List<Product> orderedProducts = customer1.getShoppingCart();
+    List<Product> orderedProducts = new ArrayList<>(customer1.getShoppingCart()); // Copy the shopping cart
     Order order1 = new Order(301, customer1, orderedProducts);
 
     // Clear customer's cart after placing order
