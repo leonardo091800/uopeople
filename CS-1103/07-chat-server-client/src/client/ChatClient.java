@@ -18,8 +18,7 @@ public class ChatClient {
 
   private String clientColor; // The unique color for this client.
 
-  // Map to store color names and corresponding ANSI codes
-  private static final Map<String, String> colorMap = new HashMap<>();
+  private static final Map<String, String> colorMap = new LinkedHashMap<>();
   static {
     colorMap.put("Red", "\u001B[31m");
     colorMap.put("Green", "\u001B[32m");
@@ -42,33 +41,30 @@ public class ChatClient {
   }
 
   public void start() {
-    Scanner scanner = new Scanner(System.in);
-
-    // Prompt the user to choose a color before connecting to the chat.
-    System.out.println("Welcome to the chat! Please choose your color:");
-    displayColorOptions();
-
-    int colorChoice = getUserColorChoice(scanner);
-    clientColor = getColorFromChoice(colorChoice);
-
     try (
         Socket socket = new Socket(SERVER_HOST, SERVER_PORT);
         BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-        PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
+        PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+        Scanner scanner = new Scanner(System.in)) {
       System.out.println("Connected to chat server.");
+
+      // Let the user select a color.
+      clientColor = selectColor(scanner);
 
       // Thread to handle incoming messages from the server.
       Thread readerThread = new Thread(() -> {
         try {
           String message;
           while ((message = in.readLine()) != null) {
-            // Check if the message is from the server.
-            if (message.startsWith(SERVER_COLOR)) {
-              System.out.println(message + RESET_COLOR);
-            } else {
-              // Display the message as received.
-              System.out.println(message);
-            }
+            // Move the cursor up to clear the current input line.
+            System.out.print("\r");
+            System.out.flush();
+
+            // Print the received message, which will already have the color code.
+            System.out.println(message);
+
+            // Reprint the user's input prompt in their color.
+            System.out.print(clientColor + "Message: ");
           }
         } catch (IOException e) {
           if (!e.getMessage().equals("Socket closed")) {
@@ -76,18 +72,21 @@ public class ChatClient {
           }
         }
       });
-
       readerThread.start();
 
       // Main loop to send messages to the server.
       while (true) {
+        System.out.print(clientColor + "Message: ");
         String input = scanner.nextLine();
         if (input.equalsIgnoreCase("exit")) {
           socket.close(); // Close the socket to exit the chat.
           break;
+        } else if (input.equalsIgnoreCase("changecolor")) {
+          clientColor = selectColor(scanner);
+          System.out.println("Your color has been updated.");
+        } else {
+          out.println(clientColor + input + RESET_COLOR);
         }
-        // Prepend the client color to the message before sending.
-        out.println(clientColor + input + RESET_COLOR); // Send the message with client color.
       }
     } catch (IOException e) {
       System.err.println("Error connecting to server: " + e.getMessage());
@@ -95,51 +94,29 @@ public class ChatClient {
   }
 
   /**
-   * Displays the list of available color options with their corresponding colors.
+   * Allows the user to select a color from a predefined list.
+   *
+   * @param scanner The scanner to read user input.
+   * @return The ANSI color code for the selected color.
    */
-  private void displayColorOptions() {
-    System.out.println("Available Colors:");
+  private String selectColor(Scanner scanner) {
+    System.out.println("Available colors:");
     int index = 1;
-    for (Map.Entry<String, String> entry : colorMap.entrySet()) {
-      System.out.println(index + ". " + entry.getValue() + entry.getKey() + RESET_COLOR);
+    for (String colorName : colorMap.keySet()) {
+      System.out.println(index + ". " + colorMap.get(colorName) + colorName + RESET_COLOR);
       index++;
     }
-    System.out.print("Enter the number corresponding to your color choice: ");
-  }
 
-  /**
-   * Gets the color choice from the user.
-   *
-   * @param scanner The scanner to read input from the user.
-   * @return The color choice entered by the user.
-   */
-  private int getUserColorChoice(Scanner scanner) {
-    int choice;
     while (true) {
+      System.out.print("Choose a color by number: ");
       try {
-        choice = Integer.parseInt(scanner.nextLine());
-        if (choice < 1 || choice > colorMap.size()) {
-          System.out.print("Invalid choice. Please choose a number between 1 and " + colorMap.size() + ": ");
-        } else {
-          break;
+        int choice = Integer.parseInt(scanner.nextLine());
+        if (choice >= 1 && choice <= colorMap.size()) {
+          return (String) colorMap.values().toArray()[choice - 1];
         }
-      } catch (NumberFormatException e) {
-        System.out.print("Invalid input. Please enter a number between 1 and " + colorMap.size() + ": ");
+      } catch (NumberFormatException ignored) {
       }
+      System.out.println("Invalid choice. Please try again.");
     }
-    return choice;
-  }
-
-  /**
-   * Converts the user's color choice to an ANSI color code.
-   *
-   * @param choice The color choice (1-13).
-   * @return The corresponding ANSI color code as a string.
-   */
-  private String getColorFromChoice(int choice) {
-    // Get the color code from the HashMap using its entry number (adjust for
-    // 1-based index)
-    return (String) colorMap.values().toArray()[choice - 1];
   }
 }
-

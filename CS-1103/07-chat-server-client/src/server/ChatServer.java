@@ -55,9 +55,19 @@ public class ChatServer {
         // Read messages from the client and broadcast them.
         String message;
         while ((message = in.readLine()) != null) {
-          // Prepend the userId before broadcasting the message (keep client color
-          // intact).
-          String fullMessage = userId + ": " + message;
+          // Prepend the userId before broadcasting the message (keep client color intact)
+          // Regular expression to match ANSI color codes
+          String colorCodeRegex = "^(\u001B\\[[0-9;]*m)";
+          String colorCode = "";
+
+          // Extract the color code if it exists
+          if (message.matches(colorCodeRegex + ".*")) {
+            colorCode = message.replaceFirst(colorCodeRegex + ".*", "$1");
+            message = message.replaceFirst(colorCodeRegex, ""); // Remove the color code
+          }
+
+          // Add "UserID: " at the beginning and reattach the color code
+          String fullMessage = colorCode + userId + ": " + message;
           broadcastMessage(fullMessage, out);
         }
       } catch (IOException e) {
